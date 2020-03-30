@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<window title="PDFをPNGに変換する" geometry="640x480">
+    <frame>
+        <label width="80" height="30">PDFファイル読み込み</label>
+        <entry width="120" height="30"></entry>
+        <button width="80">参照</button>
+    </frame>
+</window>
