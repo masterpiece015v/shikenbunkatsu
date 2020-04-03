@@ -3,6 +3,8 @@ import cv2
 import math
 import os
 import numpy as np
+from PIL import Image
+import os ,pyocr , pyocr.builders , sys
 
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai(img_in , img_out , file_name , freq=2 ):
@@ -88,53 +90,113 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     toi5 = cv2.imread("marker\\toi5.png")
     toi_list =[toi1,toi2,toi3,toi4,toi5]
 
-    dai1mon = cv2.imread("marker\\dai1mon.png")
-    dai2mon = cv2.imread("marker\\dai2mon.png")
-    dai3mon = cv2.imread("marker\\dai3mon.png")
-    dai4mon = cv2.imread("marker\\dai4mon.png")
-    dai5mon = cv2.imread("marker\\dai5mon.png")
+    #どのページにどの第●問が含まれるかチェックする
+    page_cnt = 1
+    dai_dict = {}
+    check_dict ={'第1問':['第1問','第1間'],'第2問':['第2問','第2間'],'第3問':['第3問','第3間'],'第4問':['第4問','第4間'],'第5問':['第5問','第5間']}
+    for f in os.listdir( img_in ):
+        text1 = get_text_ocr("%s/%s"%(img_in,f),50,50,250,250)
+        text2 = get_text_ocr("%s/%s"%(img_in,f),1290,50,1490,250)
+        #print( text1 )
+        #print( text2 )
+        for key in check_dict.keys():
+            if check_dict[key][0] in text1 or check_dict[key][1] in text1:
+                dai_dict[(page_cnt-1)*2+1] = key
+            if check_dict[key][0] in text2 or check_dict[key][1] in text2:
+                dai_dict[(page_cnt-1)*2+2] = key
+        page_cnt = page_cnt + 1
+        if page_cnt > 4:
+            break
 
-    # 画像を切り取る
+    # 問題を切り取る
     page = 1
     for f in os.listdir( img_in ):
         img_s = cv2.imread("%s/%s"%(img_in,f))
-
-        img_s1 = img_s[80:1670,80:1160]
-        img_s2 = img_s[80:1670,1320:2400]
+        img_s1 = img_s[50:1700,50:1190]
+        img_s2 = img_s[50:1700,1290:2430]
 
         img_list = [ img_s1 , img_s2 ]
-
         for img in img_list:
-            # 第1問
-            log,max_val = cv2MatchTemplate(img,dai1mon,0.9)
-            if max_val > 0.9:
+            if page in dai_dict.keys():
+                daimon = dai_dict[page]
                 # 第1問の時
-                toi_cnt = 0
-                while toi_cnt < len(toi_list):
-                    log1,max_val1 = cv2MatchTemplate(img,toi_list[toi_cnt],0.8)
-                    min_x = min(log1[1])
-                    min_y = min(log1[0])
-                    if toi_cnt < len(toi_list)-1:
-                        log2,max_val2 = cv2MatchTemplate(img,toi_list[toi_cnt+1],0.8)
-                        # 1～4まで
-                        max_x = min(log2[1])
-                        max_y = min(log2[0])
-                        filename = "%s\\%s%s.png"%(img_out,file_name,"010%s"%str(toi_cnt+1))
-                        cv2.imwrite(filename,img[min_y:max_y,min_x:img.shape[1] ])
-                    else:
-                        # 5
-                        img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
-                        img5,rect = tokucyou_cut( img_temp )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(toi_cnt + 1))
-                        cv2.imwrite(filename, img[min_y:min_y+rect[3]+15,min_x:img.shape[1]] )
-                    toi_cnt = toi_cnt + 1
+                if daimon == "第1問":
+                    toi_cnt = 0
+                    while toi_cnt < len(toi_list):
+                        log1, max_val1 = cv2MatchTemplate(img, toi_list[toi_cnt],0.8)
+                        print( log1 )
+                        print( max_val1 )
+                        min_x = min(log1[1])
+                        min_y = min(log1[0])
+                        if toi_cnt < len(toi_list) - 1:
+                            log2, max_val2 = cv2MatchTemplate(img, toi_list[toi_cnt + 1],0.8)
+                            # 1～4まで
+                            max_x = min(log2[1])
+                            max_y = min(log2[0])
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(toi_cnt + 1))
+                            cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                        else:
+                            # 5
+                            img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
+                            img5, rect = tokucyou_cut(img_temp)
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(toi_cnt + 1))
+                            cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
+                        toi_cnt = toi_cnt + 1
+                elif daimon == '第2問':
+                    # 第2問の時
+                    # showimage( img )
+                    img2, rect = tokucyou_cut(img)
+                    print(rect)
+                    if len(rect) > 0:
+                        # showimage( img2 )
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "0200")
+                        cv2.imwrite(filename, img2)
+                elif daimon == '第3問':
+                    # 第3問の時
+                    img2, rect = tokucyou_cut(img)
+                    if len(rect) > 0:
+                        # showimage( img2 )
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "0300")
+                        cv2.imwrite(filename, img2)
+                elif daimon == '第4問':
+                    # 第4問の時
+                    img2, rect = tokucyou_cut(img)
+                    if len(rect) > 0:
+                        # showimage( img2 )
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "0400")
+                        cv2.imwrite(filename, img2)
+                elif daimon == '第5問':
+                    # 第5問の時
+                    img2, rect = tokucyou_cut(img)
+                    if len(rect) > 0:
+                        # showimage( img2 )
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "0500")
+                        cv2.imwrite(filename, img2)
+                else:
+                    # 第問以外
+                    img2, rect = tokucyou_cut(img)
+                    if len(rect) > 0:
+                        # showimage( img2 )
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "0301")
+                        cv2.imwrite(filename, img2)
+
+                print( "%s:%s"%(page,daimon) )
             else:
-                #第1問以外の時
                 img2,rect = tokucyou_cut(img)
-                if len(rect) > 0:
-                    #showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "000%s" % str(page))
-                    cv2.imwrite(filename, img2 )
+                print( len(rect) )
+                if len( rect) >= 4 :
+                    if len( file_name ) >= 6:
+                        if page >= 10:
+                            filename = "%s\\%s.png" % (img_out,"%s2%s%s"%(file_name[0:2],file_name[3:6],"00%s"%page))
+                        else:
+                            filename = "%s\\%s.png" % (img_out, "%s2%s%s" % (file_name[0:2], file_name[3:6],"000%s" % page))
+                    else:
+                        if page >= 10:
+                            filename = "%s\\00%s.png"%(img_out,page)
+                        else:
+                            filename ="%s\\000%s.png"%(img_out,page)
+                    cv2.imwrite(filename, img[rect[2]:rect[3] , rect[0]:rect[1]])
+                print("第問ではない。")
             page = page + 1
 
 # 画像を2値化
@@ -184,11 +246,18 @@ def tokucyou_cut(img , freq=2 ):
         return img_gry,()
 
 # 画像同士の類似度
-def cv2MatchTemplate(image , marker , threshold):
+def cv2MatchTemplate2(image , marker ):
     res = cv2.matchTemplate(image, marker, cv2.TM_CCOEFF_NORMED)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
+    #loc = np.where(res >= threshold)
+    return {'minVal':minVal,'maxVal':maxVal,'minLoc':minLoc,'maxLoc':maxLoc}
+
+# 画像同士の類似度
+def cv2MatchTemplate(image , marker,threshold ):
+    res = cv2.matchTemplate(image, marker, cv2.TM_CCOEFF_NORMED)
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
     loc = np.where(res >= threshold)
-    return loc , max_val
+    return loc,maxVal
 
 def check( m , x ,y ):
     i = 0
@@ -228,3 +297,28 @@ def showimage(img):
     cv2.imshow('Image', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def get_text_ocr(src_file_name,left,upper,right,lower):
+    tools = pyocr.get_available_tools()
+    if len(tools) == 0:
+        print("No OCR tool found")
+        sys.exit(1)
+    tool = tools[0]
+
+    im = Image.open(src_file_name)
+    im = im.crop( ( left,upper ,right,lower) )
+    res = tool.image_to_string(
+        im,
+        lang="jpn",
+        builder=pyocr.builders.TextBuilder(tesseract_layout=6)
+    )
+
+    res = res.replace(" ","")
+    res = res.replace("\n","")
+    return res
+
+def main():
+    cut_mondai_bk(img_in='C:/PythonProject/shikenbunkatsu/image/145',img_out='C:\\PythonProject\\shikenbunkatsu\\cut_image',file_name='148')
+
+if __name__ == '__main__':
+    main()

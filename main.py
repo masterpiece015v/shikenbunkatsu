@@ -10,6 +10,10 @@ from tkinter import messagebox
 import threading
 from lib import cut_mj
 
+#環境変数
+os.environ['PATH'] = "%s;%s" % (os.environ['PATH'], 'C:/pythonproject/shikenbunkatsu/Tesseract-OCR')
+os.environ['TESSDATA_PREFIX'] = 'c:/pythonproject/shikenbunkatsu/Tesseract-OCR/tessdata'
+
 class MyFram():
     def __init__(self):
         # フォント
