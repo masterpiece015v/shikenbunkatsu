@@ -206,49 +206,111 @@ def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
     # 問題を切り取る
     page = 1
     for f in os.listdir( img_in ):
-        img_s = cv2.imread("%s/%s"%(img_in,f))
+        img_s = cv2.imread("%s\\%s"%(img_in,f))
 
         # [問題]の場所を見つける
         log, max_val = cv2MatchTemplate(img_s, mondai ,0.8)
-        print( log )
-        print( max_val )
-        top_x = min(log[1])
-        top_y = min(log[0])
+        #print( log )
+        #print( max_val )
 
-        # 特徴量抽出
-        img2 = cv2.cvtColor(img_s, cv2.COLOR_BGR2GRAY)
-        thresh = 100
-        max_pixel = 250
-        ret, img3 = cv2.threshold(img2, thresh, max_pixel, cv2.THRESH_BINARY)
+        if len( log[1] ) > 0 and len( log[0] ) > 0:
+            top_x = min(log[1])
 
-        #特徴量を取得する
-        #detector = cv2.ORB_create()
-        detector = cv2.AgastFeatureDetector_create()
-        #detector = cv2.FastFeatureDetector_create()
+            top_list_y = [ item for i,item in enumerate(log[0]) if i == 0 or i > 0 and log[0][i] - log[0][i-1] > 100 ]
+            # [問題]から始まらない場合
 
-        #特徴量のkeyを取得する
-        keypoints = detector.detect(img3)
+            flg = 0
+            if top_list_y[0] > 200:
+                top_list_y.insert( 0 , 100)
+                flg = 1
 
-        #ノイズを消去する
-        keypoints = noize_cut(keypoints,img3.shape[1],img3.shape[0], freq )
+            print( top_list_y )
 
-        #x,yの配列
-        px = []
-        py = []
-        for key in keypoints:
-            px.append( key.pt[0])
-            py.append( key.pt[1] )
+            img_list = []
 
-        #xの最小値と最大値を取得
-        max_x = math.floor( max(px) )
-        min_x = math.floor( min(px) )
-        max_y = math.floor( max(py) )
-        min_y = math.floor( min(py) )
+            if len( top_list_y) == 1:
+                img_list.append( img_s[top_list_y[0] - 10 :img_s.shape[0] - 30 ,top_x - 20 :img_s.shape[1]] )
+            else:
+                for i , item in enumerate( top_list_y ):
+                    if len( top_list_y )-1 > i:
+                        print( top_list_y[i+1] - 10 )
+                        img_list.append( img_s[ item -10 :top_list_y[i+1] - 30 , top_x - 20 :img_s.shape[1] ])
+                    else:
+                        img_list.append(img_s[ item - 10 :img_s.shape[0] -30, top_x - 20 :img_s.shape[1]])
 
-        # ファイルネーム
-        filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(page))
-        cv2.imwrite(filename, img_s[top_y-5:max_x , top_x-5:max_y])
-        page = page + 1
+            for i,img in enumerate( img_list ):
+                # 特徴量抽出
+                img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                thresh = 100
+                max_pixel = 250
+                ret, img3 = cv2.threshold(img2, thresh, max_pixel, cv2.THRESH_BINARY)
+
+                #特徴量を取得する
+                #detector = cv2.ORB_create()
+                detector = cv2.AgastFeatureDetector_create()
+                #detector = cv2.FastFeatureDetector_create()
+
+                #特徴量のkeyを取得する
+                keypoints = detector.detect(img3)
+
+                #ノイズを消去する
+                keypoints = noize_cut(keypoints,img3.shape[1],img3.shape[0], freq )
+
+                #x,yの配列
+                px = []
+                py = []
+                for key in keypoints:
+                    px.append( key.pt[0])
+                    py.append( key.pt[1] )
+
+                #xの最小値と最大値を取得
+                max_x = math.floor( max(px) ) + 20
+                min_x = math.floor( min(px) ) - 20
+                max_y = math.floor( max(py) ) + 20
+                min_y = math.floor( min(py) ) - 20
+
+                # ファイルネーム
+                if i == 0 and flg == 1:
+                    filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page-1), str(1)))
+                else:
+                    filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page),str(0)))
+                    page = page + 1
+
+                cv2.imwrite(filename, img[0:max_y , 0:max_x])
+        else:
+            # [問題]がない場合
+            # 特徴量抽出
+            img2 = cv2.cvtColor(img_s, cv2.COLOR_BGR2GRAY)
+            thresh = 100
+            max_pixel = 250
+            ret, img3 = cv2.threshold(img2, thresh, max_pixel, cv2.THRESH_BINARY)
+
+            # 特徴量を取得する
+            # detector = cv2.ORB_create()
+            detector = cv2.AgastFeatureDetector_create()
+            # detector = cv2.FastFeatureDetector_create()
+
+            # 特徴量のkeyを取得する
+            keypoints = detector.detect(img3)
+
+            # ノイズを消去する
+            keypoints = noize_cut(keypoints, img3.shape[1], img3.shape[0], freq)
+
+            # x,yの配列
+            px = []
+            py = []
+            for key in keypoints:
+                px.append(key.pt[0])
+                py.append(key.pt[1])
+
+            # xの最小値と最大値を取得
+            max_x = math.floor(max(px)) + 20
+            min_x = math.floor(min(px)) - 20
+            max_y = math.floor(max(py)) + 20
+            min_y = math.floor(min(py)) - 20
+            filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page),str(1)))
+            cv2.imwrite( filename, img_s[min_y:max_y , min_x: max_x ] )
+
 # 画像を2値化
 def conv_binary(img):
     img_gry = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -398,7 +460,7 @@ def png_to_ocr( src_dir_name,des_dir_name,des_file_name):
             writer.writerow([fileName[0:len(fileName)-4],res])
 
 def main():
-    cut_mondai_bk(img_in='C:/PythonProject/shikenbunkatsu/image/145',img_out='C:\\PythonProject\\shikenbunkatsu\\cut_image',file_name='148')
+    cut_mondai_hj(img_in='C:\\Users\\mnt\\Desktop\\png',img_out='C:\\Users\\mnt\\Desktop\\png_cut',file_name='148')
 
 if __name__ == '__main__':
     main()

@@ -45,7 +45,7 @@ class MyFram():
         nb.add(self.tab3,text=u'明暗',padding=3)
         nb.add(self.tab4,text=u'BK_CutPNG',padding=3)
         nb.add(self.tab5,text=u'OCRでCSV',padding=3)
-        nb.add(self.tab6,text=u'法人_CutPNG',padding=3 )
+        nb.add(self.tab6,text=u'税法_CutPNG',padding=3 )
         nb.place(x=5,y=5)
 
         #-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
@@ -1040,7 +1040,7 @@ class MyFram():
         cut_mj.cut_mondai_hj(self.tab6_src_folder_entry.get(), dst_path, self.tab6_file_name_entry.get(), 2)
         self.tab6_prog_bar.stop()
         messagebox.showinfo("終了", "変換が終了しました。")
-        self.tab6_file_list_show(self.tab4_dst_folder_entry.get())
+        self.tab6_file_list_show(self.tab6_dst_folder_entry.get())
 
 if __name__ == "__main__":
     frame = MyFram()
