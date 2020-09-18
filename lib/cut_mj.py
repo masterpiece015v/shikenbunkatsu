@@ -1,10 +1,10 @@
 #問題を切り取るプログラム
 import cv2
 import math
-import os
 import numpy as np
 from PIL import Image
 import os ,pyocr , pyocr.builders , sys
+import csv
 
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai(img_in , img_out , file_name , freq=2 ):
@@ -199,6 +199,56 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                 print("第問ではない。")
             page = page + 1
 
+# img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
+def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
+    mondai = cv2.imread("marker\\mondai.png")
+
+    # 問題を切り取る
+    page = 1
+    for f in os.listdir( img_in ):
+        img_s = cv2.imread("%s/%s"%(img_in,f))
+
+        # [問題]の場所を見つける
+        log, max_val = cv2MatchTemplate(img_s, mondai ,0.8)
+        print( log )
+        print( max_val )
+        top_x = min(log[1])
+        top_y = min(log[0])
+
+        # 特徴量抽出
+        img2 = cv2.cvtColor(img_s, cv2.COLOR_BGR2GRAY)
+        thresh = 100
+        max_pixel = 250
+        ret, img3 = cv2.threshold(img2, thresh, max_pixel, cv2.THRESH_BINARY)
+
+        #特徴量を取得する
+        #detector = cv2.ORB_create()
+        detector = cv2.AgastFeatureDetector_create()
+        #detector = cv2.FastFeatureDetector_create()
+
+        #特徴量のkeyを取得する
+        keypoints = detector.detect(img3)
+
+        #ノイズを消去する
+        keypoints = noize_cut(keypoints,img3.shape[1],img3.shape[0], freq )
+
+        #x,yの配列
+        px = []
+        py = []
+        for key in keypoints:
+            px.append( key.pt[0])
+            py.append( key.pt[1] )
+
+        #xの最小値と最大値を取得
+        max_x = math.floor( max(px) )
+        min_x = math.floor( min(px) )
+        max_y = math.floor( max(py) )
+        min_y = math.floor( min(py) )
+
+        # ファイルネーム
+        filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(page))
+        cv2.imwrite(filename, img_s[top_y-5:max_x , top_x-5:max_y])
+        page = page + 1
 # 画像を2値化
 def conv_binary(img):
     img_gry = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -225,6 +275,11 @@ def tokucyou_cut(img , freq=2 ):
     kp = detector.detect(img_gry)
     # ノイズを消去する
     kp = noize_cut(kp, 1080, 1590, freq)
+
+    # 特徴をマークする
+    #out = cv2.drawKeypoints(img,kp,None)
+    #cv2.imwrite("cut_image/t.png",out)
+    #showimage(out)
     if len(kp) > 0:
         # x,yの配列
         px = []
@@ -316,6 +371,31 @@ def get_text_ocr(src_file_name,left,upper,right,lower):
     res = res.replace(" ","")
     res = res.replace("\n","")
     return res
+
+def png_to_ocr( src_dir_name,des_dir_name,des_file_name):
+    tools = pyocr.get_available_tools()
+    if len(tools) == 0:
+        print("No OCR tool found")
+        sys.exit(1)
+    tool = tools[0]
+
+    for fileName in os.listdir( src_dir_name):
+        im = Image.open( "%s/%s"%(src_dir_name,fileName ))
+
+        res = tool.image_to_string(
+            im,
+            lang="jpn",
+            builder=pyocr.builders.TextBuilder(tesseract_layout=6)
+        )
+
+        res = res.replace(" ","")
+        res = res.replace("\n","")
+
+        new_file_name = "%s/%s.csv"%(des_dir_name,des_file_name)
+
+        with open(new_file_name,mode='a',newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([fileName[0:len(fileName)-4],res])
 
 def main():
     cut_mondai_bk(img_in='C:/PythonProject/shikenbunkatsu/image/145',img_out='C:\\PythonProject\\shikenbunkatsu\\cut_image',file_name='148')
