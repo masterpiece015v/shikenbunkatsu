@@ -88,6 +88,7 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     toi3 = cv2.imread("marker\\toi3.png")
     toi4 = cv2.imread("marker\\toi4.png")
     toi5 = cv2.imread("marker\\toi5.png")
+    dai1mon = cv2.imread("marker\\dai1mon.png")
     toi_list =[toi1,toi2,toi3,toi4,toi5]
 
     #どのページにどの第●問が含まれるかチェックする
@@ -97,8 +98,8 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     for f in os.listdir( img_in ):
         text1 = get_text_ocr("%s/%s"%(img_in,f),50,50,250,250)
         text2 = get_text_ocr("%s/%s"%(img_in,f),1290,50,1490,250)
-        #print( text1 )
-        #print( text2 )
+        print( text1 )
+        print( text2 )
         for key in check_dict.keys():
             if check_dict[key][0] in text1 or check_dict[key][1] in text1:
                 dai_dict[(page_cnt-1)*2+1] = key
@@ -111,7 +112,9 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     # 問題を切り取る
     page = 1
     for f in os.listdir( img_in ):
-        img_s = cv2.imread("%s/%s"%(img_in,f))
+        print( os.path.join(img_in,f) )
+        img_s = cv2.imread(os.path.join(img_in,f))
+
         img_s1 = img_s[50:1700,50:1190]
         img_s2 = img_s[50:1700,1290:2430]
 
@@ -122,62 +125,73 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                 # 第1問の時
                 if daimon == "第1問":
                     toi_cnt = 0
+                    log0,max_val0 = cv2MatchTemplate(img,dai1mon,0.8)
+                    min_y0 = min(log0[0])
+
                     while toi_cnt < len(toi_list):
                         log1, max_val1 = cv2MatchTemplate(img, toi_list[toi_cnt],0.8)
                         print( log1 )
-                        print( max_val1 )
+                        #print( max_val1 )
                         min_x = min(log1[1])
                         min_y = min(log1[0])
+                        #if toi_cnt == 0:
+                        #    f_min_y = min_y
+
                         if toi_cnt < len(toi_list) - 1:
                             log2, max_val2 = cv2MatchTemplate(img, toi_list[toi_cnt + 1],0.8)
                             # 1～4まで
                             max_x = min(log2[1])
                             max_y = min(log2[0])
-                            filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(toi_cnt + 1))
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
                             cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                            if toi_cnt == 0:
+                                #許容勘定科目
+                                filename = "%s\\%s%s.png" % (img_out,file_name,"_1_0")
+                                cv2.imwrite(filename,img[min_y0+150:min_y, min_x:img.shape[1]])
                         else:
                             # 5
                             img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
                             img5, rect = tokucyou_cut(img_temp)
-                            filename = "%s\\%s%s.png" % (img_out, file_name, "010%s" % str(toi_cnt + 1))
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
                             cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
                         toi_cnt = toi_cnt + 1
                 elif daimon == '第2問':
                     # 第2問の時
-                    # showimage( img )
+                    #showimage( img )
                     img2, rect = tokucyou_cut(img)
-                    print(rect)
+                    #showimage( img2 )
+                    #print(rect)
                     if len(rect) > 0:
                         # showimage( img2 )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "0200")
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
                         cv2.imwrite(filename, img2)
                 elif daimon == '第3問':
                     # 第3問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "0300")
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
                         cv2.imwrite(filename, img2)
                 elif daimon == '第4問':
                     # 第4問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "0400")
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
                         cv2.imwrite(filename, img2)
                 elif daimon == '第5問':
                     # 第5問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "0500")
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
                         cv2.imwrite(filename, img2)
                 else:
                     # 第問以外
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "0301")
+                        filename = "%s\\%s%s.png" % (img_out, file_name, "_3_2")
                         cv2.imwrite(filename, img2)
 
                 print( "%s:%s"%(page,daimon) )
@@ -195,7 +209,7 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                             filename = "%s\\00%s.png"%(img_out,page)
                         else:
                             filename ="%s\\000%s.png"%(img_out,page)
-                    cv2.imwrite(filename, img[rect[2]:rect[3] , rect[0]:rect[1]])
+                    cv2.imwrite(filename, img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15])
                 print("第問ではない。")
             page = page + 1
 
@@ -311,6 +325,53 @@ def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
             filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page),str(1)))
             cv2.imwrite( filename, img_s[min_y:max_y , min_x: max_x ] )
 
+# img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
+# 余白を削除するのみ
+def cut_mondai_margin(img_in ,img_out, freq=2 ):
+    for i,f in enumerate(os.listdir( img_in )):
+        if ".png" in f:
+            img = cv2.imread("%s/%s"%(img_in,f))
+            print("%s/%s"%(img_in,f))
+            #showimage( img )
+            # 特徴量抽出
+            #img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            thresh = 100
+            max_pixel = 250
+            ret, img3 = cv2.threshold(img, thresh, max_pixel, cv2.THRESH_BINARY)
+
+            #特徴量を取得する
+            #detector = cv2.ORB_create()
+            detector = cv2.AgastFeatureDetector_create()
+            #detector = cv2.FastFeatureDetector_create()
+
+            #特徴量のkeyを取得する
+            keypoints = detector.detect(img3)
+
+            #ノイズを消去する
+            keypoints = noize_cut(keypoints,img3.shape[1],img3.shape[0], freq )
+
+            #x,yの配列
+            px = []
+            py = []
+            for key in keypoints:
+                px.append( key.pt[0])
+                py.append( key.pt[1] )
+
+            #xの最小値と最大値を取得
+            max_x = math.floor( max(px) ) + 20
+            min_x = math.floor( min(px) ) - 20
+            max_y = math.floor( max(py) ) + 20
+            min_y = math.floor( min(py) ) - 20
+
+            # ファイルネーム
+            if i < 10:
+                filename = "%s/%s.png" % (img_out, f[0:len(f)-4].replace("-","_") )
+            else:
+                filename = "%s/%s.png" % (img_out, f[0:len(f)-4].replace("-","_") )
+
+            cv2.imwrite(filename, img[min_y:max_y , min_x:max_x])
+            # os.remove( "%s/%s"%(img_in,f) )
+
 # 画像を2値化
 def conv_binary(img):
     img_gry = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -358,7 +419,7 @@ def tokucyou_cut(img , freq=2 ):
 
         #showimage(img[min_y-15:max_y+15,min_x-15:max_x+15])
         rect = (min_x,max_x,min_y,max_y)
-        return img[min_y-15:max_y+15,min_x-15:max_x+15],rect
+        return img[min_y-30:max_y+30,min_x-30:max_x+30],rect
     else:
         return img_gry,()
 

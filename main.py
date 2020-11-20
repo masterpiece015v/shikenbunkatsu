@@ -39,6 +39,7 @@ class MyFram():
         self.tab4 = ttk.Frame(nb)
         self.tab5 = ttk.Frame(nb)
         self.tab6 = ttk.Frame(nb)
+        self.tab7 = ttk.Frame(nb)
 
         nb.add(self.tab1,text=u'PDFtoPNG',padding=3)
         nb.add(self.tab2,text=u'JH_CutPNG',padding=3)
@@ -46,6 +47,7 @@ class MyFram():
         nb.add(self.tab4,text=u'BK_CutPNG',padding=3)
         nb.add(self.tab5,text=u'OCRでCSV',padding=3)
         nb.add(self.tab6,text=u'税法_CutPNG',padding=3 )
+        nb.add(self.tab7,text=u'余白cut',padding=3)
         nb.place(x=5,y=5)
 
         #-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
@@ -466,7 +468,88 @@ class MyFram():
         self.tab6_convert_btn = ttk.Button(self.tab6, text=u'変換', command=self.tab6_convert_btn_click)
         # PDFをPNGに変換するボタンのレイアウト
         self.tab6_convert_btn.place(x=275, y=335, width=80, height=30)
-    
+
+        # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+        # タブ7
+        # 読み込みPDFファイルの選択
+        self.tab7_src_file_var = StringVar()
+        self.tab7_src_file_label = ttk.Label(self.tab7, text=u'フォルダ')
+        self.tab7_src_file_entry = ttk.Entry(self.tab7, textvariable=self.tab7_src_file_var, width=50)
+        self.tab7_src_file_btn = ttk.Button(self.tab7, text=u'参照', command=self.tab7_src_file_btn_click)
+        # 読み込みPDFファイル選択のレイアウト
+        self.tab7_src_file_label.place(x=5, y=5, width=130, height=30)
+        self.tab7_src_file_entry.place(x=155, y=5, width=300, height=30)
+        self.tab7_src_file_btn.place(x=475, y=5, width=80, height=30)
+
+        # 保存先フォルダの選択
+        self.tab7_dst_folder_var = StringVar()
+        self.tab7_dst_folder_label = ttk.Label(self.tab7, text=u'保存先フォルダ')
+        self.tab7_dst_folder_entry = ttk.Entry(self.tab7, textvariable=self.tab7_dst_folder_var, width=50)
+        self.tab7_dst_folder_btn = ttk.Button(self.tab7, text=u'参照', command=self.tab7_dst_folder_btn_click)
+        # 保存先選択のレイアウト
+        self.tab7_dst_folder_label.place(x=5,y=45,width=130,height=30)
+        self.tab7_dst_folder_entry.place(x=155,y=45,width=300,height=30)
+        self.tab7_dst_folder_btn.place(x=475,y=45,width=80,height=30)
+
+        # 保存先のファイルを表示するリスト
+        self.tab7_file_list_var = StringVar(value=())
+        self.tab7_file_list = ttk.Treeview(self.tab7)
+        self.tab7_file_list.bind('<Double-1>', lambda event: self.tab7_file_list_double_click())
+        # 保存先ファイルのリストのレイアウト
+        self.tab7_file_list.place(x=5, y=85, width=250, height=200)
+
+        # スクロールバー
+        self.tab7_file_list_scr = ttk.Scrollbar(self.tab7, orient=tkinter.VERTICAL, command=self.tab7_file_list.yview)
+        self.tab7_file_list['yscrollcommand'] = self.tab7_file_list_scr.set
+        # スクロールバーのレイアウト
+        self.tab7_file_list_scr.place(x=255, y=85, width=10, height=200)
+
+        # ファイルを削除するボタン
+        self.tab7_file_select_del_btn = ttk.Button(self.tab7, text=u'選択削除', command=self.tab7_file_select_del_btn_click)
+        # ファイルを削除するボタンのレイアウト
+        self.tab7_file_select_del_btn.place(x=275, y=85, width=100, height=30)
+
+        # ファイルを全て削除するボタン
+        self.tab7_file_all_del_btn = ttk.Button(self.tab7, text=u'全削除', command=self.tab7_file_all_del_btn_click)
+        # ファイルを全て削除するボタンのレイアウト
+        self.tab7_file_all_del_btn.place(x=275, y=125, width=100, height=30)
+
+        # コントラスト
+        self.tab7_cont_box_var = StringVar()
+        self.tab7_cont_label = ttk.Label(self.tab7, text=u'コントラスト')
+        self.tab7_cont_entry = ttk.Entry(self.tab7, textvariable=self.tab7_cont_box_var, width=5)
+        self.tab7_cont_entry.bind('<KeyPress-Return>', lambda event: self.tab7_cont_box_callback())
+        self.tab7_cont_entry.insert(tkinter.END, '2.0')
+        # コントラストのレイアウト
+        self.tab7_cont_label.place(x=5, y=295, width=130, height=30)
+        self.tab7_cont_entry.place(x=145, y=295, width=60, height=30)
+        # コントラストのスケール
+        self.tab7_cont_scale_var = tkinter.DoubleVar()
+        self.tab7_cont_scale_var.set(2.0)
+        self.tab7_cont_scale = ttk.Scale(self.tab7, from_=0, to=5, variable=self.tab7_cont_scale_var,
+                                         command=self.tab7_cont_scale_callback)
+        # コントラストスケールのレイアウト
+        self.tab7_cont_scale.place(x=215, y=295, width=200, height=30)
+
+        # ファイル名
+        self.tab7_file_name_var = StringVar()
+        self.tab7_file_name_label = ttk.Label(self.tab7, text=u'ファイル名')
+        self.tab7_file_name_entry = ttk.Entry(self.tab7, width=10, textvariable=self.tab7_file_name_var)
+        # ファイル名のレイアウト
+        self.tab7_file_name_label.place(x=5, y=335, width=130, height=30)
+        self.tab7_file_name_entry.place(x=145, y=335, width=120, height=30)
+
+        # プログレスバー
+        self.tab7_prog_bar = ttk.Progressbar(self.tab7, orient=tkinter.HORIZONTAL, length=200, mode='indeterminate')
+        self.tab7_prog_bar.configure(maximum=100, value=0)
+        # プログレスバーのレイアウト
+        self.tab7_prog_bar.place(x=5, y=375, width=260, height=30)
+
+        # PDFをPNGに変換するボタン
+        self.tab7_convert_btn = ttk.Button(self.tab7, text=u'変換', command=self.tab7_convert_btn_pdf)
+        # PDFをPNGに変換するボタンのレイアウト
+        self.tab7_convert_btn.place(x=275, y=335, width=80, height=30)
+
     def mainloop(self):
         self.main_win.mainloop()
 
@@ -595,7 +678,7 @@ class MyFram():
 
                 os.remove(os.path.join(image_file_path, file))
 
-                file_name = file[0:len(file) - 4] + "-conv.png"
+                file_name = file[0:len(file) - 4] + ".png"
                 im2.save(os.path.join(image_file_path, file_name))
                 im2.close()
 
@@ -1041,6 +1124,100 @@ class MyFram():
         self.tab6_prog_bar.stop()
         messagebox.showinfo("終了", "変換が終了しました。")
         self.tab6_file_list_show(self.tab6_dst_folder_entry.get())
+
+    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+    # タブ1のイベント
+    # pdfファイルを選択するボタンのイベント
+    def tab7_src_file_btn_click(self):
+            path = filedialog.askdirectory(initialdir=self.cur_file_dir)
+            self.tab7_src_file_var.set(path)
+
+            #dirpath = [i if i != len(file)-1 for i in file]
+            #self.cur_folder_dir = dirpath.join("/")
+    # pngファイルを保存するフォルダを選択するボタンのイベント
+    def tab7_dst_folder_btn_click(self):
+        path = filedialog.askdirectory(initialdir=self.cur_folder_dir)
+        self.tab7_file_list_show(path)
+        self.tab7_dst_folder_var.set(path)
+        self.cur_folder_dir = path
+
+    # パラメータ（パス）内のファイルをfile_listに表示する
+    def tab7_file_list_show(self, path):
+        # リスト内をクリアする
+        self.tab7_file_list.delete(*self.tab7_file_list.get_children())
+        for file in os.listdir(path):
+            sub_path = os.path.join(path, file)
+            if (os.path.isdir(sub_path)):
+                # フォルダの場合
+                folder = self.tab7_file_list.insert("", "end", text=file)
+                for file2 in os.listdir(sub_path):
+                    if '.png' in file2:
+                        self.tab7_file_list.insert(folder, "end", text=file2)
+
+    # コンバートボタンのイベント
+    def tab7_convert_btn_pdf(self):
+        self.tab7_prog_bar.start(interval=10)
+        th = threading.Thread(target=self.pdftopng_callback2)
+        th.start()
+
+    # pdftopngのコールバック
+    def pdftopng_callback2(self):
+        cut_mj.cut_mondai_margin(self.tab7_src_file_entry.get()
+                                 ,self.tab7_dst_folder_entry.get())
+
+        self.tab7_prog_bar.stop()
+        messagebox.showinfo("終了", "変換が終了しました。")
+        # ファイル名を表示する
+        # self.tab7_file_list_show(self.tab7_dst_folder_entry.get())
+
+    # 選択したファイルを削除するボタンのイベント
+    def tab7_file_select_del_btn_click(self):
+        file_name = self.get_treeview_file_path(self.tab7_file_list)
+        # print(os.path.join(self.folder_box.get(),file_name ) )
+        file_path = os.path.join(self.tab7_dst_folder_entry.get(), file_name)
+        if '.png' in file_name:
+            os.remove(file_path)
+            self.tab7_file_list.delete(self.tab7_file_list.focus())
+        elif os.path.isdir(os.path.join(self.tab7_dst_folder_entry.get(), file_name)):
+            try:
+                print(file_path)
+                os.rmdir(file_path)
+                self.tab7_file_list.delete(self.tab7_file_list.focus())
+            except OSError:
+                messagebox.showerror("削除できません", "フォルダが空ではないため削除できません。")
+
+    # ファイルを全て削除する
+    def tab7_file_all_del_btn_click(self):
+        for child in self.tab7_file_list.get_children(self.tab7_file_list.focus()):
+            file = self.tab7_file_list.item(child)['text']
+            if '.png' in file:
+                parent = self.tab7_file_list.item(self.tab7_file_list.focus())['text']
+                file_path = os.path.join(self.tab7_dst_folder_entry.get(), parent, file)
+                os.remove(file_path)
+                self.tab7_file_list.delete(child)
+
+    # リストボックスをダブルクリックすると画像を表示する
+    def tab7_file_list_double_click(self):
+        focus_file_path = self.get_treeview_file_path(self.tab7_file_list)
+        file_path = os.path.join(self.tab7_dst_folder_entry.get(), focus_file_path)
+        if '.png' in file_path:
+            im = Image.open(file_path)
+            im.show()
+
+    # フォーカスされたツリービューのパスを返す
+    def get_treeview_file_path(self, tv):
+        file_name = tv.item(tv.focus())['text']
+        parent_name = tv.item(tv.parent(tv.focus()))['text']
+        return os.path.join(parent_name, file_name)
+
+    # コントラストスライダーのコールバック
+    def tab7_cont_scale_callback(self, value):
+        self.tab7_cont_box_var.set(round(float(value) * 10) / 10)
+
+    # コントラストボックスのコールバック
+    def tab7_cont_box_callback(self):
+        self.tab7_cont_scale_var.set(float(self.tab7_cont_entry.get()))
+
 
 if __name__ == "__main__":
     frame = MyFram()
