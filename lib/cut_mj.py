@@ -6,11 +6,22 @@ from PIL import Image
 import os ,pyocr , pyocr.builders , sys
 import csv
 
+#pilで読込cv2に吐き出す
+def pilread(file_path):
+    img = Image.open( file_path )
+    return np.asarray( img )
+
+#numpyで渡して画像保存する。
+def pilwrite( numpy_image , file_path ):
+    img = Image.fromarray(np.uint8(numpy_image))
+    img.save( file_path )
+
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai(img_in , img_out , file_name , freq=2 ):
     img_no = 1
     for f in os.listdir( img_in ):
-        img = cv2.imread("%s/%s"%(img_in,f))
+        #img = cv2.imread()
+        img = pilread( "%s/%s"%(img_in,f) )
         img = cv2.resize(img,(920,1300))
         img = img[20:1220,20:900]
         #サイズを変更する
@@ -75,7 +86,8 @@ def cut_mondai(img_in , img_out , file_name , freq=2 ):
                 path = path % "%s%s.png"%(file_name,img_no)
 
             #ファイルを保存する
-            cv2.imwrite(path,out[dect[0]-15:dect[1]+15,min_x-15:max_x+15])
+            # cv2.imwrite(path,out[dect[0]-15:dect[1]+15,min_x-15:max_x+15])
+            pilwrite(out[dect[0]-15:dect[1]+15,min_x-15:max_x+15],path)
             img_no = img_no + 1
 
         print( str(img_no - 1) + "問")
@@ -83,12 +95,18 @@ def cut_mondai(img_in , img_out , file_name , freq=2 ):
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     img_no = 1
-    toi1 = cv2.imread("marker\\toi1.png")
-    toi2 = cv2.imread("marker\\toi2.png")
-    toi3 = cv2.imread("marker\\toi3.png")
-    toi4 = cv2.imread("marker\\toi4.png")
-    toi5 = cv2.imread("marker\\toi5.png")
-    dai1mon = cv2.imread("marker\\dai1mon.png")
+    #toi1 = cv2.imread("marker\\toi1.png")
+    #toi2 = cv2.imread("marker\\toi2.png")
+    #toi3 = cv2.imread("marker\\toi3.png")
+    #toi4 = cv2.imread("marker\\toi4.png")
+    #toi5 = cv2.imread("marker\\toi5.png")
+    #dai1mon = cv2.imread("marker\\dai1mon.png")
+    toi1 = pilread("marker\\toi1.png")
+    toi2 = pilread("marker\\toi2.png")
+    toi3 = pilread("marker\\toi3.png")
+    toi4 = pilread("marker\\toi4.png")
+    toi5 = pilread("marker\\toi5.png")
+    dai1mon = pilread("marker\\dai1mon.png")
     toi_list =[toi1,toi2,toi3,toi4,toi5]
 
     #どのページにどの第●問が含まれるかチェックする
@@ -113,8 +131,8 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     page = 1
     for f in os.listdir( img_in ):
         print( os.path.join(img_in,f) )
-        img_s = cv2.imread(os.path.join(img_in,f))
-
+        #img_s = cv2.imread(os.path.join(img_in,f))
+        img_s = pilread( os.path.join(img_in,f) )
         img_s1 = img_s[50:1700,50:1190]
         img_s2 = img_s[50:1700,1290:2430]
 
@@ -143,17 +161,20 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                             max_x = min(log2[1])
                             max_y = min(log2[0])
                             filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
-                            cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                            #cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                            pilwrite( img[min_y:max_y, min_x:img.shape[1]],filename )
                             if toi_cnt == 0:
                                 #許容勘定科目
                                 filename = "%s\\%s%s.png" % (img_out,file_name,"_1_0")
-                                cv2.imwrite(filename,img[min_y0+150:min_y, min_x:img.shape[1]])
+                                # cv2.imwrite(filename,img[min_y0+150:min_y, min_x:img.shape[1]])
+                                pilwrite( img[min_y0+150:min_y, min_x:img.shape[1]], filename )
                         else:
                             # 5
                             img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
                             img5, rect = tokucyou_cut(img_temp)
                             filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
-                            cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
+                            #cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
+                            pilwrite(img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]],filename)
                         toi_cnt = toi_cnt + 1
                 elif daimon == '第2問':
                     # 第2問の時
@@ -164,36 +185,40 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                     if len(rect) > 0:
                         # showimage( img2 )
                         filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
-                        cv2.imwrite(filename, img2)
+                        #cv2.imwrite(filename, img2)
+                        pilwrite( img2 , filename )
                 elif daimon == '第3問':
                     # 第3問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
                         filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
-                        cv2.imwrite(filename, img2)
+                        # cv2.imwrite(filename, img2)
+                        pilwrite( img2 , filename )
                 elif daimon == '第4問':
                     # 第4問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
                         filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
-                        cv2.imwrite(filename, img2)
+                        #cv2.imwrite(filename, img2)
+                        pilwrite( img2 , filename )
                 elif daimon == '第5問':
                     # 第5問の時
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
                         filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
-                        cv2.imwrite(filename, img2)
+                        # cv2.imwrite(filename, img2)
+                        pilwrite( img2 , filename )
                 else:
                     # 第問以外
                     img2, rect = tokucyou_cut(img)
                     if len(rect) > 0:
                         # showimage( img2 )
                         filename = "%s\\%s%s.png" % (img_out, file_name, "_3_2")
-                        cv2.imwrite(filename, img2)
-
+                        # cv2.imwrite(filename, img2)
+                        pilwrite( img2 , filename )
                 print( "%s:%s"%(page,daimon) )
             else:
                 img2,rect = tokucyou_cut(img)
@@ -209,19 +234,20 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
                             filename = "%s\\00%s.png"%(img_out,page)
                         else:
                             filename ="%s\\000%s.png"%(img_out,page)
-                    cv2.imwrite(filename, img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15])
+                    # cv2.imwrite(filename, img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15])
+                    pilwrite(img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15] ,filename )
                 print("第問ではない。")
             page = page + 1
 
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
-    mondai = cv2.imread("marker\\mondai.png")
-
+    #mondai = cv2.imread("marker\\mondai.png")
+    mondai = pilread("marker\\mondai.png")
     # 問題を切り取る
     page = 1
     for f in os.listdir( img_in ):
-        img_s = cv2.imread("%s\\%s"%(img_in,f))
-
+        #img_s = cv2.imread("%s\\%s"%(img_in,f))
+        img_s = pilread("%s\\%s"%(img_in,f))
         # [問題]の場所を見つける
         log, max_val = cv2MatchTemplate(img_s, mondai ,0.8)
         #print( log )
@@ -290,7 +316,8 @@ def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
                     filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page),str(0)))
                     page = page + 1
 
-                cv2.imwrite(filename, img[0:max_y , 0:max_x])
+                #cv2.imwrite(filename, img[0:max_y , 0:max_x])
+                pilwrite(img[0:max_y , 0:max_x],filename )
         else:
             # [問題]がない場合
             # 特徴量抽出
@@ -323,14 +350,16 @@ def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
             max_y = math.floor(max(py)) + 20
             min_y = math.floor(min(py)) - 20
             filename = "%s\\%s%s.png" % (img_out, file_name, "010%s%s" % (str(page),str(1)))
-            cv2.imwrite( filename, img_s[min_y:max_y , min_x: max_x ] )
+            #cv2.imwrite( filename, img_s[min_y:max_y , min_x: max_x ] )
+            pilwrite( img_s[min_y:max_y , min_x: max_x ] , filename )
 
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 # 余白を削除するのみ
 def cut_mondai_margin(img_in ,img_out, freq=2 ):
     for i,f in enumerate(os.listdir( img_in )):
         if ".png" in f:
-            img = cv2.imread("%s/%s"%(img_in,f))
+            # img = cv2.imread("%s/%s"%(img_in,f))
+            img = pilread( "%s/%s"%(img_in,f) )
             print("%s/%s"%(img_in,f))
             #showimage( img )
             # 特徴量抽出
@@ -369,7 +398,8 @@ def cut_mondai_margin(img_in ,img_out, freq=2 ):
             else:
                 filename = "%s/%s.png" % (img_out, f[0:len(f)-4].replace("-","_") )
 
-            cv2.imwrite(filename, img[min_y:max_y , min_x:max_x])
+            # cv2.imwrite(filename, img[min_y:max_y , min_x:max_x])
+            pilwrite( img[min_y:max_y,min_x:max_x] , filename )
             # os.remove( "%s/%s"%(img_in,f) )
 
 # 画像を2値化
