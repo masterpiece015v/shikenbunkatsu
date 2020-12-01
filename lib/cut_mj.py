@@ -95,12 +95,6 @@ def cut_mondai(img_in , img_out , file_name , freq=2 ):
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     img_no = 1
-    #toi1 = cv2.imread("marker\\toi1.png")
-    #toi2 = cv2.imread("marker\\toi2.png")
-    #toi3 = cv2.imread("marker\\toi3.png")
-    #toi4 = cv2.imread("marker\\toi4.png")
-    #toi5 = cv2.imread("marker\\toi5.png")
-    #dai1mon = cv2.imread("marker\\dai1mon.png")
     toi1 = pilread("marker\\toi1.png")
     toi2 = pilread("marker\\toi2.png")
     toi3 = pilread("marker\\toi3.png")
@@ -114,8 +108,8 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     dai_dict = {}
     check_dict ={'第1問':['第1問','第1間'],'第2問':['第2問','第2間'],'第3問':['第3問','第3間'],'第4問':['第4問','第4間'],'第5問':['第5問','第5間']}
     for f in os.listdir( img_in ):
-        text1 = get_text_ocr("%s/%s"%(img_in,f),50,50,250,250)
-        text2 = get_text_ocr("%s/%s"%(img_in,f),1290,50,1490,250)
+        text1 = get_text_ocr("%s/%s"%(img_in,f),50,50,250,1200)
+        text2 = get_text_ocr("%s/%s"%(img_in,f),1290,50,1490,1200)
         print( text1 )
         print( text2 )
         for key in check_dict.keys():
