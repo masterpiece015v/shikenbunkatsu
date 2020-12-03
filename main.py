@@ -275,7 +275,6 @@ class MyFram():
         self.tab4_src_folder_label.place(x=5, y=5, width=130, height=30)
         self.tab4_src_folder_entry.place(x=155, y=5, width=300, height=30)
         self.tab4_src_folder_btn.place(x=475, y=5, width=80, height=30)
-
         # 保存先フォルダの選択
         self.tab4_dst_folder_label = ttk.Label(self.tab4, text=u'保存先フォルダ')
         self.tab4_dst_folder_var = StringVar()
@@ -285,13 +284,11 @@ class MyFram():
         self.tab4_dst_folder_label.place(x=5, y=45, width=130, height=30)
         self.tab4_dst_folder_entry.place(x=155, y=45, width=300, height=30)
         self.tab4_dst_folder_btn.place(x=475, y=45, width=80, height=30)
-
         # 保存先のファイルを表示するリスト
         self.tab4_file_list = ttk.Treeview(self.tab4)
         self.tab4_file_list.bind('<Double-1>', lambda event: self.tab4_file_list_double_click())
         # 保存先ファイルのリストのレイアウト
         self.tab4_file_list.place(x=5, y=85, width=250, height=200)
-
         # スクロールバー
         self.tab4_file_list_scr = ttk.Scrollbar(self.tab4, orient=tkinter.VERTICAL, command=self.tab4_file_list.yview)
         self.tab4_file_list['yscrollcommand'] = self.tab4_file_list_scr.set
@@ -870,6 +867,7 @@ class MyFram():
         path = filedialog.askdirectory(initialdir=self.cur_dir)
         self.tab4_file_list_show(path)
         self.tab4_dst_folder_var.set(path)
+        self.cur_folder_dir = path
 
     # パラメータ（パス）内のファイルをfile_listに表示する
     def tab4_file_list_show(self,path):

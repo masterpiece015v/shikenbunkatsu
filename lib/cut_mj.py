@@ -95,12 +95,23 @@ def cut_mondai(img_in , img_out , file_name , freq=2 ):
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     img_no = 1
-    toi1 = pilread("marker\\toi1.png")
-    toi2 = pilread("marker\\toi2.png")
-    toi3 = pilread("marker\\toi3.png")
-    toi4 = pilread("marker\\toi4.png")
-    toi5 = pilread("marker\\toi5.png")
-    dai1mon = pilread("marker\\dai1mon.png")
+    #toi1 = pilread("marker\\toi1.png")
+    #toi2 = pilread("marker\\toi2.png")
+    #toi3 = pilread("marker\\toi3.png")
+    #toi4 = pilread("marker\\toi4.png")
+    #toi5 = pilread("marker\\toi5.png")
+    #dai1mon = pilread("marker\\dai1mon.png")
+    toi1 = cv2.imread("marker\\toi1.png")
+    toi2 = cv2.imread("marker\\toi2.png")
+    toi3 = cv2.imread("marker\\toi3.png")
+    toi4 = cv2.imread("marker\\toi4.png")
+    toi5 = cv2.imread("marker\\toi5.png")
+    dai1mon = cv2.imread("marker\\dai1mon.png")
+    dai2mon = cv2.imread("marker\\dai2mon.png")
+    dai3mon = cv2.imread("marker\\dai3mon.png")
+    dai4mon = cv2.imread("marker\\dai4mon.png")
+    dai5mon = cv2.imread("marker\\dai5mon.png")
+
     toi_list =[toi1,toi2,toi3,toi4,toi5]
 
     #どのページにどの第●問が含まれるかチェックする
@@ -112,11 +123,20 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
         text2 = get_text_ocr("%s/%s"%(img_in,f),1290,50,1490,1200)
         print( text1 )
         print( text2 )
+
         for key in check_dict.keys():
             if check_dict[key][0] in text1 or check_dict[key][1] in text1:
-                dai_dict[key] = (page_cnt-1)*2+1
+                if (page_cnt-1)*2+1 in dai_dict.keys():
+                    dai_dict[(page_cnt-1)*2+1].append(key)
+                else:
+                    dai_dict[(page_cnt - 1) * 2 + 1] = [key,]
+
             if check_dict[key][0] in text2 or check_dict[key][1] in text2:
-                dai_dict[key] = (page_cnt-1)*2+2
+                if( page_cnt-1)*2+2 in dai_dict.keys():
+                    dai_dict[(page_cnt-1)*2+2].append(key)
+                else:
+                    dai_dict[(page_cnt-1)*2+2] = [key]
+
         page_cnt = page_cnt + 1
         if page_cnt > 4:
             break
@@ -126,127 +146,195 @@ def cut_mondai_bk(img_in , img_out , file_name , freq=2 ):
     page = 1
     for f in os.listdir( img_in ):
         print( os.path.join(img_in,f) )
-        #img_s = cv2.imread(os.path.join(img_in,f))
-        img_s = pilread( os.path.join(img_in,f) )
+        img_s = cv2.imread(os.path.join(img_in,f))
+        #img_s = pilread( os.path.join(img_in,f) )
         img_s1 = img_s[50:1700,50:1190]
         img_s2 = img_s[50:1700,1290:2430]
 
         img_list = [ img_s1 , img_s2 ]
 
         for img in img_list:
+            if page in dai_dict.keys():
+                daimon_list = dai_dict[page]
+                if len( daimon_list )== 1:
+                    if daimon_list[0] == "第1問":
+                        toi_cnt = 0
+                        log0, max_val0 = cv2MatchTemplate(img, dai1mon, 0.8)
+                        min_y0 = min(log0[0])
+                        while toi_cnt < len(toi_list):
+                            log1, max_val1 = cv2MatchTemplate(img, toi_list[toi_cnt], 0.8)
+                            min_x = min(log1[1])
+                            min_y = min(log1[0])
+                            if toi_cnt < len(toi_list) - 1:
+                                log2, max_val2 = cv2MatchTemplate(img, toi_list[toi_cnt + 1], 0.8)
+                                # 1～4まで
+                                max_y = min(log2[0])
+                                filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
+                                cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                                #pilwrite(img[min_y:max_y, min_x:img.shape[1]], filename)
 
-            flg = False
+                                if toi_cnt == 0:
+                                    # 許容勘定科目
+                                    filename = "%s\\%s%s.png" % (img_out, file_name, "_1_0")
+                                    cv2.imwrite(filename,img[min_y0+150:min_y, min_x:img.shape[1]])
+                                    #pilwrite(img[min_y0:min_y, min_x:img.shape[1]], filename)
+                            else:
+                                # 5
+                                img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
+                                img5, rect = tokucyou_cut(img_temp)
+                                filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
+                                cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
+                                #pilwrite(img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]], filename)
+                            toi_cnt = toi_cnt + 1
+                        flg = True
+                    if daimon_list[0] == "第2問":
+                        # 第2問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
+                        flg = True
+                    if daimon_list[0] == "第3問":
+                        # 第3問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
+                        flg = True
+                    if daimon_list[0] == "第4問":
+                        # 第4問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
+                    if daimon_list[0] == "第5問":
+                        # 第5問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
+                        flg = True
+                else:
+                    if daimon_list[0] == "第1問":
+                        toi_cnt = 0
+                        log0, max_val0 = cv2MatchTemplate(img, dai1mon, 0.8)
+                        log0_2,max_val0_2 = cv2MatchTemplate(img,dai2mon,0.8)
+                        min_y0 = min(log0[0])
+                        max_y0 = log0_2[0][1]
 
-            if dai_dict["第1問"] == page:
-                toi_cnt = 0
-                showimage(img)
-                showimage(dai1mon)
-                log0, max_val0 = cv2MatchTemplate(img, dai1mon, 0.8)
-                min_y0 = min(log0[0])
+                        while toi_cnt < len(toi_list):
+                            log1, max_val1 = cv2MatchTemplate(img, toi_list[toi_cnt], 0.8)
+                            min_x = min(log1[1])
+                            min_y = min(log1[0])
+                            if toi_cnt < len(toi_list) - 1:
+                                log2, max_val2 = cv2MatchTemplate(img, toi_list[toi_cnt + 1], 0.8)
+                                # 1～4まで
+                                max_y = min(log2[0])
+                                filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
+                                cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
+                                if toi_cnt == 0:
+                                    # 許容勘定科目
+                                    filename = "%s\\%s%s.png" % (img_out, file_name, "_1_0")
+                                    cv2.imwrite(filename,img[min_y0:min_y, min_x:img.shape[1]])
+                            else:
+                                # 5
+                                img_temp = img[min_y:max_y0, min_x:img.shape[1]]
 
-                while toi_cnt < len(toi_list):
-                    log1, max_val1 = cv2MatchTemplate(img, toi_list[toi_cnt], 0.8)
-                    print(log1)
-                    # print( max_val1 )
-                    min_x = min(log1[1])
-                    min_y = min(log1[0])
-                    # if toi_cnt == 0:
-                    #    f_min_y = min_y
+                                img5, rect = tokucyou_cut(img_temp)
+                                filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
+                                cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
+                            toi_cnt = toi_cnt + 1
 
-                    if toi_cnt < len(toi_list) - 1:
-                        log2, max_val2 = cv2MatchTemplate(img, toi_list[toi_cnt + 1], 0.8)
-                        # 1～4まで
-                        max_x = min(log2[1])
-                        max_y = min(log2[0])
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
-                        # cv2.imwrite(filename, img[min_y:max_y, min_x:img.shape[1]])
-                        pilwrite(img[min_y:max_y, min_x:img.shape[1]], filename)
-                        if toi_cnt == 0:
-                            # 許容勘定科目
-                            filename = "%s\\%s%s.png" % (img_out, file_name, "_1_0")
-                            # cv2.imwrite(filename,img[min_y0+150:min_y, min_x:img.shape[1]])
-                            pilwrite(img[min_y0 + 150:min_y, min_x:img.shape[1]], filename)
-                    else:
-                        # 5
-                        img_temp = img[min_y:img.shape[0], min_x:img.shape[1]]
-                        img5, rect = tokucyou_cut(img_temp)
-                        filename = "%s\\%s%s.png" % (img_out, file_name, "_1_%s" % str(toi_cnt + 1))
-                        # cv2.imwrite(filename, img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]])
-                        pilwrite(img[min_y:min_y + rect[3] + 15, min_x:img.shape[1]], filename)
-                    toi_cnt = toi_cnt + 1
-                flg = True
+                        #第2問の切り出し
+                        img2, rect = tokucyou_cut(img)
+                        log0,max_val0 = cv2MatchTemplate(img2,dai2mon,0.8)
+                        min_y = log0[0][1]
+                        print( min_y )
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
+                            print( img2.shape )
+                            print( rect )
+                            cv2.imwrite(filename, img2[min_y:img2.shape[0],0:img2.shape[1]])
 
-            if dai_dict["第2問"] == page:
-                # 第2問の時
-                # showimage( img )
-                img2, rect = tokucyou_cut(img)
-                # showimage( img2 )
-                # print(rect)
-                if len(rect) > 0:
-                    # showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
-                    # cv2.imwrite(filename, img2)
-                    pilwrite(img2, filename)
-                flg = True
+                    if daimon_list[0] == "第2問":
+                        #第2問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_2_1")
+                            cv2.imwrite(filename, img2)
 
-            if dai_dict["第3問"] == page:
-                # 第3問の時
-                img2, rect = tokucyou_cut(img)
-                if len(rect) > 0:
-                    # showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
-                    # cv2.imwrite(filename, img2)
-                    pilwrite(img2, filename)
-                flg = True
+                        #第3問の切り出し
+                        img2, rect = tokucyou_cut(img)
+                        log0,max_val0 = cv2MatchTemplate(img2,dai3mon,0.8)
+                        min_y = log0[0][1]
+                        print( min_y )
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
+                            print( img2.shape )
+                            print( rect )
+                            cv2.imwrite(filename, img2[min_y:img2.shape[0],0:img2.shape[1]])
 
-            if dai_dict["第4問"] == page:
-                # 第4問の時
-                img2, rect = tokucyou_cut(img)
-                if len(rect) > 0:
-                    # showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
-                    # cv2.imwrite(filename, img2)
-                    pilwrite(img2, filename)
+                    if daimon_list[0] == "第3問":
+                        # 第3問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_3_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
 
-            if dai_dict["第5問"] == page:
-                # 第5問の時
-                img2, rect = tokucyou_cut(img)
-                if len(rect) > 0:
-                    # showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
-                    # cv2.imwrite(filename, img2)
-                    pilwrite(img2, filename)
-                flg = True
+                        #第4問の切り出し
+                        img2, rect = tokucyou_cut(img)
+                        log0,max_val0 = cv2MatchTemplate(img2,dai4mon,0.8)
+                        min_y = log0[0][1]
+                        print( min_y )
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
+                            cv2.imwrite(filename, img2[min_y:img2.shape[0],0:img2.shape[1]])
 
-            if flg == False:
+                    if daimon_list[0] == "第4問":
+                        # 第4問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_4_1")
+                            cv2.imwrite(filename, img2)
+                            print("第4問")
+
+                        #第5問の切り出し
+                        img2, rect = tokucyou_cut(img)
+                        log0,max_val0 = cv2MatchTemplate(img2,dai5mon,0.8)
+                        min_y = log0[0][1]
+                        print( min_y )
+                        if len(rect) > 0:
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
+                            cv2.imwrite(filename, img2[min_y:img2.shape[0],0:img2.shape[1]])
+                            print("第5問")
+
+                    if daimon_list[0] == "第5問":
+                        # 第5問の時
+                        img2, rect = tokucyou_cut(img)
+                        if len(rect) > 0:
+                            # showimage( img2 )
+                            filename = "%s\\%s%s.png" % (img_out, file_name, "_5_1")
+                            cv2.imwrite(filename, img2)
+                            #pilwrite(img2, filename)
+                        flg = True
+            else:
                 # 第問以外
                 img2, rect = tokucyou_cut(img)
                 if len(rect) > 0:
                     # showimage( img2 )
-                    filename = "%s\\%s%s.png" % (img_out, file_name, "_3_2")
-                    # cv2.imwrite(filename, img2)
-                    pilwrite(img2, filename)
+                    filename = "%s\\%s%s.png" % (img_out, file_name, "_0_0")
+                    cv2.imwrite(filename, img2)
             page = page + 1
-
-            """
-            else:
-                img2,rect = tokucyou_cut(img)
-                print( len(rect) )
-                if len( rect) >= 4 :
-                    if len( file_name ) >= 6:
-                        if page >= 10:
-                            filename = "%s\\%s.png" % (img_out,"%s2%s%s"%(file_name[0:2],file_name[3:6],"00%s"%page))
-                        else:
-                            filename = "%s\\%s.png" % (img_out, "%s2%s%s" % (file_name[0:2], file_name[3:6],"000%s" % page))
-                    else:
-                        if page >= 10:
-                            filename = "%s\\00%s.png"%(img_out,page)
-                        else:
-                            filename ="%s\\000%s.png"%(img_out,page)
-                    # cv2.imwrite(filename, img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15])
-                    pilwrite(img[rect[2]-15:rect[3]+15 , rect[0]-15:rect[1]+15] ,filename )
-                print("第問ではない。")
-            """
 
 # img_in( directory path) , img_out( directory path )  , file_name 'feh29h'
 def cut_mondai_hj(img_in , img_out , file_name , freq=2 ):
@@ -461,6 +549,17 @@ def tokucyou_cut(img , freq=2 ):
         return img[min_y-30:max_y+30,min_x-30:max_x+30],rect
     else:
         return img_gry,()
+# PILをCV2
+def pil2cv(image):
+    ''' PIL型 -> OpenCV型 '''
+    new_image = np.array(image, dtype=np.uint8)
+    if new_image.ndim == 2:  # モノクロ
+        pass
+    elif new_image.shape[2] == 3:  # カラー
+        new_image = cv2.cvtColor(new_image, cv2.COLOR_RGB2BGR)
+    elif new_image.shape[2] == 4:  # 透過
+        new_image = cv2.cvtColor(new_image, cv2.COLOR_RGBA2BGRA)
+    return new_image
 
 # 画像同士の類似度
 def cv2MatchTemplate2(image , marker ):
